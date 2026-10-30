@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>시공간 우체통 : 평행세계 편지국</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Google Web Fonts: Gowun Batang (아날로그 고서/타자기 감성) & Orbitron -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Orbitron:wght@500;700;900&family=Nanum+Pen+Script&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            batang: ['"Gowun Batang"', 'serif'],
+            orbitron: ['"Orbitron"', 'sans-serif'],
+            hand: ['"Nanum Pen Script"', 'cursive']
+          },
+          colors: {
+            space: {
+              900: '#060814',
+              800: '#0c1024',
+              700: '#151b3d',
+              card: '#111730'
+            },
+            parchment: {
+              DEFAULT: '#f4ebd0',
+              dark: '#e6d7b2',
+              border: '#c3b087',
+              ink: '#2c251e'
+            },
+            cosmic: {
+              amber: '#f59e0b',
+              glow: '#38bdf8',
+              crimson: '#991b1b',
+              violet: '#a855f7'
+            }
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': { transform: 'translateY(0px)' },
+              '50%': { transform: 'translateY(-8px)' }
+            },
+            pulseGlow: {
+              '0%, 100%': { opacity: '0.4' },
+              '50%': { opacity: '0.9' }
+            },
+            stampThump: {
+              '0%': { transform: 'scale(2.5)', opacity: '0' },
+              '60%': { transform: 'scale(0.9)', opacity: '1' },
+              '100%': { transform: 'scale(1)', opacity: '1' }
+            }
+          },
+          animation: {
+            float: 'float 5s ease-in-out infinite',
+            pulseGlow: 'pulseGlow 3s ease-in-out infinite',
+            stamp: 'stampThump 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards'
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Paper Grain & Vintage Effects */
+    .parchment-texture {
+      background-color: #f7eed7;
+      background-image: radial-gradient(#d8c49d 1px, transparent 0), radial-gradient(#eadbc0 1px, #f5ecd5 0);
+      background-size: 24px 24px;
+      background-position: 0 0, 12px 12px;
+      box-shadow: inset 0 0 45px rgba(110, 80, 40, 0.22), 0 20px 40px -15px rgba(0, 0, 0, 0.6);
+    }
+
+    .wax-seal {
+      width: 52px;
+      height: 52px;
+      background: radial-gradient(circle at 35% 35%, #e11d48, #881337 75%, #4c0519);
+      border-radius: 50%;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5), inset 1px 1px 3px rgba(255, 255, 255, 0.4), inset -2px -2px 4px rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    
+    .wax-seal::after {
+      content: '';
+      position: absolute;
+      inset: 4px;
+      border: 1.5px dashed rgba(255, 220, 220, 0.35);
+      border-radius: 50%;
+    }
+
+    /* Custom Scrollbar for cozy paper letter reader */
+    ::-webkit-scrollbar {
+      width: 7px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #090c1a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #2a335a;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #47558a;
+    }
+
+    .letter-scroll::-webkit-scrollbar {
+      width: 5px;
+    }
+    .letter-scroll::-webkit-scrollbar-track {
+      background: #ebdcc0;
+    }
+    .letter-scroll::-webkit-scrollbar-thumb {
+      background: #a89470;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+
+<body class="bg-space-900 text-slate-200 font-batang min-h-screen flex flex-col relative overflow-x-hidden selection:bg-amber-400 selection:text-space-900">
+
+  <!-- Starlight Canvas Background -->
+  <canvas id="starCanvas" class="fixed inset-0 pointer-events-none z-0"></canvas>
+
+  <!-- Ambient Glow Blobs -->
+  <div class="fixed top-1/4 -left-40 w-96 h-96 bg-purple-900/20 rounded-full blur-3xl pointer-events-none animate-pulseGlow"></div>
+  <div class="fixed bottom-10 -right-40 w-96 h-96 bg-amber-600/15 rounded-full blur-3xl pointer-events-none animate-pulseGlow" style="animation-delay: 1.5s;"></div>
+
+  <!-- Header / Nav -->
+  <header class="relative z-10 border-b border-white/10 bg-space-800/80 backdrop-blur-md sticky top-0 px-4 lg:px-8 py-3.5 transition-all">
+    <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      
+      <!-- Brand Logo & Identity -->
+      <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('inbox')">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-purple-600 flex items-center justify-center shadow-lg shadow-amber-500/20 border border-amber-300/30">
+          <i class="fa-solid fa-hourglass-half text-space-900 text-lg"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg md:text-xl font-bold tracking-tight text-white flex items-center gap-1.5">
+              <span>시공간 우체통</span>
+              <span class="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 font-orbitron">CHRONOS POST</span>
+            </h1>
+          </div>
+          <p class="text-xs text-slate-400">평행세계와 시간선을 잇는 1:1 익명 편지국</p>
+        </div>
+      </div>
+
+      <!-- Current Identity Badge / Persona Switcher Trigger -->
+      <div class="flex items-center gap-2.5">
+        <button onclick="openPersonaModal()" class="flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-space-700/80 hover:bg-space-700 border border-white/15 text-xs transition duration-200 shadow-sm group">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+          <div class="text-left">
+            <div class="text-[10px] text-slate-400 leading-none">현재 내 주파수 페르소나</div>
+            <div id="navPersonaName" class="font-bold text-amber-300 truncate max-w-[130px] md:max-w-[200px]">생성 중...</div>
+          </div>
+          <i class="fa-solid fa-dice text-amber-400 group-hover:rotate-180 transition-transform duration-500"></i>
+        </button>
+
+        <button onclick="openWriteModal()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-500 text-space-900 font-bold text-xs md:text-sm hover:brightness-110 active:scale-95 transition shadow-lg shadow-amber-500/20 flex items-center gap-2">
+          <i class="fa-solid fa-feather-pointed"></i>
+          <span>차원 송신</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Sub-Navigation Bar -->
+  <div class="relative z-10 border-b border-white/5 bg-space-900/60 backdrop-blur-sm">
+    <div class="max-w-6xl mx-auto px-4 flex items-center justify-between overflow-x-auto text-xs md:text-sm font-medium">
+      <div class="flex space-x-2 py-2">
+        <button id="tabBtnInbox" onclick="switchTab('inbox')" class="px-4 py-2 rounded-lg transition flex items-center gap-2 bg-white/10 text-amber-300 font-bold border border-white/10">
+          <i class="fa-solid fa-inbox"></i>
+          <span>수신함</span>
+          <span id="unreadCountBadge" class="ml-1 text-[10px] bg-rose-600 text-white font-bold px-1.5 py-0.2 rounded-full">3</span>
+        </button>
+        <button id="tabBtnSent" onclick="switchTab('sent')" class="px-4 py-2 rounded-lg transition flex items-center gap-2 text-slate-400 hover:text-white hover:bg-white/5">
+          <i class="fa-solid fa-paper-plane"></i>
+          <span>발신 우체통</span>
+          <span id="sentCountBadge" class="text-[10px] bg-space-700 text-slate-300 px-1.5 py-0.2 rounded-full">0</span>
+        </button>
+        <button id="tabBtnLore" onclick="switchTab('lore')" class="px-4 py-2 rounded-lg transition flex items-center gap-2 text-slate-400 hover:text-white hover:bg-white/5">
+          <i class="fa-solid fa-compass"></i>
+          <span>차원 지도 & 규약</span>
+        </button>
+      </div>
+
+      <div class="hidden md:flex items-center gap-3 text-xs text-slate-400">
+        <span class="flex items-center gap-1.5 text-amber-400/90 font-orbitron">
+          <i class="fa-solid fa-satellite-dish animate-pulse"></i>
+          <span>차원간 전송 지연율: 0.04 AU/min</span>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content Viewport -->
+  <main class="relative z-10 flex-1 max-w-6xl w-full mx-auto p-4 md:p-6 lg:p-8 flex flex-col gap-6">
+
+    <!-- Hero / Status Banner -->
+    <div class="rounded-2xl border border-amber-500/20 bg-gradient-to-r from-space-card via-space-800 to-space-card p-4 md:p-6 shadow-2xl relative overflow-hidden">
+      <div class="absolute -right-10 -bottom-10 opacity-10 pointer-events-none text-9xl text-amber-200">
+        <i class="fa-solid fa-envelope-open-text"></i>
+      </div>
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div class="inline-flex items-center gap-2 text-xs font-orbitron text-amber-400 mb-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+            TIMELINE INTERCONNECT: ONLINE
+          </div>
+          <h2 class="text-xl md:text-2xl font-bold text-white tracking-wide">
+            "지구의 시간은 흐르지만, 우리의 편지는 영원을 횡단합니다."
+          </h2>
+          <p class="text-slate-300 text-xs md:text-sm mt-1 max-w-2xl leading-relaxed">
+            당신은 다른 시공간에 사는 누군가와 닿아있습니다. 자신의 진짜 이름 대신 선택된 세계관의 페르소나로 편지를 띄우고 느릿한 답장을 기다려보세요.
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="rollRandomLetterArrival()" class="px-3.5 py-2 rounded-xl bg-space-700/80 hover:bg-space-700 border border-white/10 text-xs text-amber-300 flex items-center gap-2 transition hover:scale-105 active:scale-95 shadow">
+            <i class="fa-solid fa-meteor text-amber-400"></i>
+            <span>차원 전파 탐색 (새 편지 받기)</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 1: INBOX & SENT CONTAINER -->
+    <section id="viewInboxAndSent" class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      
+      <!-- Left Column: Letter Index List -->
+      <div class="lg:col-span-5 bg-space-card/90 border border-white/10 rounded-2xl p-4 shadow-xl flex flex-col h-[650px]">
+        <div class="flex items-center justify-between pb-3 border-b border-white/10">
+          <div class="flex items-center gap-2">
+            <h3 id="letterListTitle" class="font-bold text-white text-base">차원 수신함</h3>
+            <span class="text-xs text-slate-400" id="letterCountSummary">(3통 보관 중)</span>
+          </div>
+          <div class="text-xs text-slate-400 flex items-center gap-1">
+            <i class="fa-solid fa-filter"></i>
+            <span id="currentFilterLabel">모든 시간대</span>
+          </div>
+        </div>
+
+        <!-- Scrollable Letter Cards List -->
+        <div id="lettersListContainer" class="flex-1 overflow-y-auto space-y-3 pr-1 pt-3">
+          <!-- Populated by JS -->
+        </div>
+
+        <div class="pt-3 border-t border-white/10 text-[11px] text-slate-500 text-center flex items-center justify-between">
+          <span><i class="fa-solid fa-shield-halved mr-1"></i>엔드투엔드 시공간 양자암호화</span>
+          <button onclick="clearSavedDataConfirm()" class="hover:text-rose-400 underline transition">초기화</button>
+        </div>
+      </div>
+
+      <!-- Right Column: Letter Reading Parchment View -->
+      <div class="lg:col-span-7 flex flex-col h-[650px]">
+        <div id="emptyLetterView" class="hidden flex-1 border border-dashed border-white/10 rounded-2xl bg-space-card/40 flex flex-col items-center justify-center p-8 text-center text-slate-400">
+          <i class="fa-regular fa-envelope-open text-5xl text-amber-500/30 mb-4 animate-float"></i>
+          <h4 class="text-base font-bold text-slate-300">열람할 편지를 선택하세요</h4>
+          <p class="text-xs text-slate-400 mt-1 max-w-sm">
+            좌측 목록에서 시간선을 넘나든 편지를 누르면 빈티지 편지지로 복원되어 펼쳐집니다.
+          </p>
+          <button onclick="openWriteModal()" class="mt-4 px-4 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-xl text-xs transition">
+            <i class="fa-solid fa-pen-nib mr-1.5"></i>직접 새 편지 띄우기
+          </button>
+        </div>
+
+        <!-- The Parchment Letter Display -->
+        <div id="letterPaperView" class="flex-1 parchment-texture rounded-2xl p-6 md:p-8 flex flex-col justify-between text-parchment-ink relative overflow-hidden transition-all shadow-2xl">
+          
+          <!-- Top Wax Stamp & Letter Metadata -->
+          <div>
+            <div class="flex items-start justify-between border-b-2 border-parchment-border pb-4 mb-4">
+              <div>
+                <span id="viewEraBadge" class="text-[11px] font-bold tracking-wider px-2.5 py-1 rounded-md bg-[#2b2216] text-amber-100 uppercase mb-2 inline-block shadow-sm">
+                  서기 2099년 네오 서울
+                </span>
+                <h3 id="viewLetterSubject" class="text-xl md:text-2xl font-bold text-parchment-ink tracking-tight font-batang mt-1">
+                  편지 제목 로딩 중...
+                </h3>
+                <div class="text-xs text-stone-600 mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <span><i class="fa-solid fa-user-astronaut mr-1 text-stone-700"></i><strong id="viewSenderPersona">발신인</strong></span>
+                  <span><i class="fa-solid fa-clock-rotate-left mr-1 text-stone-700"></i><span id="viewTimestamp">기록 시간</span></span>
+                  <span id="viewTransmissionStatus" class="text-emerald-800 font-bold"><i class="fa-solid fa-circle-check mr-1"></i>수신 완료</span>
+                </div>
+              </div>
+
+              <!-- Wax Seal Visual -->
+              <div class="wax-seal flex-shrink-0 animate-stamp shadow-lg cursor-pointer" title="차원 봉인 인장">
+                <i id="viewWaxIcon" class="fa-solid fa-compass text-amber-100 text-lg"></i>
+              </div>
+            </div>
+
+            <!-- Letter Body Content -->
+            <div class="letter-scroll max-h-[340px] overflow-y-auto pr-2 text-stone-800 leading-relaxed text-sm md:text-base space-y-3 font-batang whitespace-pre-line" id="viewLetterBody">
+              편지 본문이 이곳에 표시됩니다...
+            </div>
+          </div>
+
+          <!-- Letter Bottom Actions & Reply Section -->
+          <div class="pt-4 border-t border-parchment-border mt-4 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-hand text-stone-600 text-lg">"시간을 건너 닿은 당신에게"</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="saveLetterAsFavorite()" id="favoriteBtn" class="px-3 py-1.5 rounded-lg border border-stone-400/50 hover:bg-stone-300/40 text-stone-800 text-xs transition flex items-center gap-1.5">
+                <i class="fa-regular fa-bookmark"></i>
+                <span>보관</span>
+              </button>
+              <button onclick="prepareReply()" class="px-4 py-2 rounded-xl bg-[#2e2318] hover:bg-[#1a140d] text-amber-100 text-xs md:text-sm font-bold transition shadow-md flex items-center gap-2">
+                <i class="fa-solid fa-reply"></i>
+                <span>이 차원으로 답장 쓰기</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 2: LORE & DIMENSIONS EXPLORER (Hidden by default) -->
+    <section id="viewLore" class="hidden space-y-6">
+      <div class="bg-space-card/90 border border-white/10 rounded-2xl p-6 md:p-8">
+        <h3 class="text-xl font-bold text-amber-300 mb-2 flex items-center gap-2">
+          <i class="fa-solid fa-book-atlas"></i>
+          <span>평행세계 편지국 우주 규약 & 차원 목록</span>
+        </h3>
+        <p class="text-sm text-slate-300 leading-relaxed mb-6">
+          시공간 우체통은 단일한 현실의 고독을 달래기 위해 설립되었습니다. 아래 등록된 5개의 공인 차원 중 당신의 주파수를 맞춰 펜팔을 나눌 수 있습니다.
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="universeGrid">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ================= MODAL: WRITE / TRANSMIT LETTER ================= -->
+  <div id="writeModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-3 md:p-6 overflow-y-auto">
+    <div class="parchment-texture w-full max-w-2xl rounded-2xl p-6 md:p-8 text-parchment-ink relative shadow-2xl border-4 border-[#b99f6b] my-8 animate-stamp">
+      
+      <!-- Close Button -->
+      <button onclick="closeWriteModal()" class="absolute top-4 right-4 text-stone-600 hover:text-stone-900 w-8 h-8 rounded-full flex items-center justify-center hover:bg-stone-300/50 transition">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+
+      <!-- Modal Header -->
+      <div class="border-b-2 border-parchment-border pb-3 mb-4">
+        <div class="flex items-center gap-2 text-xs font-bold text-amber-900 tracking-wider">
+          <i class="fa-solid fa-feather"></i>
+          <span>시공간 송신 전표</span>
+        </div>
+        <h3 class="text-xl md:text-2xl font-bold text-stone-900 font-batang mt-1">차원 너머로 편지 띄우기</h3>
+        <p class="text-xs text-stone-600">당신의 글은 시공간 주파수를 타고 적합한 평행세계 방랑자의 우체통에 안착합니다.</p>
+      </div>
+
+      <!-- Letter Form -->
+      <form id="writeLetterForm" onsubmit="handleSendLetter(event)" class="space-y-4">
+        
+        <!-- From Persona & Target Dimension -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-stone-800 mb-1">발신자 (내 페르소나)</label>
+            <div class="flex items-center gap-2">
+              <input type="text" id="formSender" readonly class="w-full text-xs font-semibold bg-stone-200/80 border border-parchment-border rounded-lg p-2 text-stone-800 cursor-not-allowed">
+              <button type="button" onclick="openPersonaModal()" title="페르소나 변경" class="px-2.5 py-2 bg-stone-300 hover:bg-stone-400 rounded-lg text-xs text-stone-800 transition">
+                <i class="fa-solid fa-dice"></i>
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-stone-800 mb-1">도착 희망 차원</label>
+            <select id="formTargetEra" class="w-full text-xs bg-[#fdf8ee] border border-parchment-border rounded-lg p-2 text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700">
+              <option value="any">🌌 전 차원 무작위 방류 (운명에 맡김)</option>
+              <option value="서기 2099년 네오 서울 뒷골목">서기 2099년 네오 서울 뒷골목</option>
+              <option value="1920년대 경성 야간 재즈바">1920년대 경성 야간 재즈바</option>
+              <option value="안드로메다 식물도감 연구소">안드로메다 식물도감 연구소</option>
+              <option value="1994년 시골마을 카세트 대여점">1994년 시골마을 카세트 대여점</option>
+              <option value="중세 마법학원 지하 도서관">중세 마법학원 지하 도서관</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Title -->
+        <div>
+          <label class="block text-xs font-bold text-stone-800 mb-1">편지 제목</label>
+          <input type="text" id="formTitle" required placeholder="예: 비가 내리지 않는 그곳의 밤은 어떤가요?" class="w-full text-sm bg-[#fdf8ee] border border-parchment-border rounded-lg p-2.5 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-700 font-batang font-bold">
+        </div>
+
+        <!-- Body -->
+        <div>
+          <div class="flex justify-between items-center mb-1">
+            <label class="text-xs font-bold text-stone-800">서신 내용 (익명 롤플레잉 권장)</label>
+            <span id="charCount" class="text-[11px] text-stone-500">0자 / 최소 30자 권장</span>
+          </div>
+          <textarea id="formBody" required rows="6" oninput="updateCharCount()" placeholder="당신의 세상은 어떤 날씨인가요? 사소한 고민, 오늘 본 기묘한 풍경, 혹은 털어놓지 못했던 진심을 차원 너머의 친구에게 적어보세요..." class="w-full text-sm bg-[#fdf8ee] border border-parchment-border rounded-lg p-3 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-700 font-batang leading-relaxed resize-none"></textarea>
+        </div>
+
+        <!-- Stamp / Wax Style Picker -->
+        <div>
+          <label class="block text-xs font-bold text-stone-800 mb-1.5">봉인 왁스 인장 문양 선택</label>
+          <div class="flex items-center gap-3">
+            <label class="cursor-pointer flex items-center gap-1.5">
+              <input type="radio" name="stampIcon" value="fa-compass" checked class="accent-amber-900">
+              <span class="text-xs text-stone-800"><i class="fa-solid fa-compass text-amber-900"></i> 나침반</span>
+            </label>
+            <label class="cursor-pointer flex items-center gap-1.5">
+              <input type="radio" name="stampIcon" value="fa-moon" class="accent-amber-900">
+              <span class="text-xs text-stone-800"><i class="fa-solid fa-moon text-amber-900"></i> 달무리</span>
+            </label>
+            <label class="cursor-pointer flex items-center gap-1.5">
+              <input type="radio" name="stampIcon" value="fa-feather" class="accent-amber-900">
+              <span class="text-xs text-stone-800"><i class="fa-solid fa-feather text-amber-900"></i> 깃펜</span>
+            </label>
+            <label class="cursor-pointer flex items-center gap-1.5">
+              <input type="radio" name="stampIcon" value="fa-hourglass" class="accent-amber-900">
+              <span class="text-xs text-stone-800"><i class="fa-solid fa-hourglass text-amber-900"></i> 모래시계</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Footer Actions -->
+        <div class="flex items-center justify-between pt-3 border-t border-parchment-border">
+          <div class="text-[11px] text-stone-600 flex items-center gap-1">
+            <i class="fa-solid fa-hourglass-start"></i>
+            <span>차원 간 전송에는 수 초에서 수 분이 소요됩니다.</span>
+          </div>
+          <button type="submit" id="sendLetterBtn" class="px-5 py-2.5 bg-gradient-to-r from-red-900 to-amber-900 hover:from-red-950 hover:to-amber-950 text-amber-100 font-bold rounded-xl text-xs md:text-sm shadow-lg flex items-center gap-2 transition active:scale-95">
+            <i class="fa-solid fa-stamp"></i>
+            <span>인장 찍고 차원 송신</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: PERSONA CREATOR ================= -->
+  <div id="personaModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-space-card border border-amber-500/30 w-full max-w-lg rounded-2xl p-6 text-slate-100 relative shadow-2xl">
+      <button onclick="closePersonaModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+
+      <div class="text-center mb-5">
+        <div class="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-300 border border-amber-400/30 flex items-center justify-center mx-auto mb-2 text-xl shadow-inner">
+          <i class="fa-solid fa-masks-theater"></i>
+        </div>
+        <h3 class="text-lg font-bold text-white">차원 페르소나 설정실</h3>
+        <p class="text-xs text-slate-400">익명 펜팔에서 당신을 대변할 시공간 신분을 선택하거나 주사위를 굴리세요.</p>
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">소속 시간선 / 차원</label>
+          <select id="personaEraSelect" onchange="previewPersonaCard()" class="w-full bg-space-800 border border-white/10 rounded-xl p-2.5 text-xs text-amber-200 focus:outline-none focus:border-amber-400">
+            <!-- Populated via JS -->
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">호칭 / 직업</label>
+          <input type="text" id="personaRoleInput" oninput="previewPersonaCard()" placeholder="예: 심야 라디오 DJ, 기억을 수리하는 시계공" class="w-full bg-space-800 border border-white/10 rounded-xl p-2.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-400">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">현재 상태 / 기분 한 줄</label>
+          <input type="text" id="personaMoodInput" oninput="previewPersonaCard()" placeholder="예: 새벽 3시 차가운 빗소리를 듣는 중" class="w-full bg-space-800 border border-white/10 rounded-xl p-2.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-400">
+        </div>
+
+        <!-- Persona Preview Card -->
+        <div class="p-3.5 rounded-xl border border-amber-500/30 bg-gradient-to-r from-space-900 to-space-800 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-amber-400/20 text-amber-300 flex items-center justify-center text-lg">
+              <i class="fa-solid fa-fingerprint"></i>
+            </div>
+            <div>
+              <div id="previewCardRole" class="text-xs font-bold text-amber-300">페르소나 명</div>
+              <div id="previewCardEra" class="text-[10px] text-slate-400">소속 시간대</div>
+              <div id="previewCardMood" class="text-[10px] text-slate-500 italic mt-0.5">상태 문구</div>
+            </div>
+          </div>
+          <button type="button" onclick="rollRandomPersona()" class="px-3 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 rounded-xl text-xs flex items-center gap-1.5 transition active:scale-95">
+            <i class="fa-solid fa-dice"></i>
+            <span>랜덤 주사위</span>
+          </button>
+        </div>
+
+        <button onclick="savePersona()" class="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-space-900 font-bold rounded-xl text-sm transition shadow-lg shadow-amber-500/20 mt-2">
+          이 페르소나로 확정하기
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Toast -->
+  <div id="toastMessage" class="fixed bottom-6 right-6 z-50 bg-space-800/95 border border-amber-400/40 text-amber-200 px-4 py-3 rounded-xl shadow-2xl backdrop-blur-md text-xs flex items-center gap-2 transform translate-y-24 opacity-0 transition-all duration-300 pointer-events-none">
+    <i class="fa-solid fa-bell text-amber-400"></i>
+    <span id="toastText">알림 내용</span>
+  </div>
+
+  <!-- Sound Audio Elements (Web Audio Synthesized for Stamping) -->
+  <script>
+    /* =========================================================
+       1. STARFIELD CANVAS ANIMATION
+    ========================================================= */
+    const canvas = document.getElementById('starCanvas');
+    const ctx = canvas.getContext('2d');
+    let stars = [];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      initStars();
+    }
+
+    function initStars() {
+      stars = [];
+      const numStars = Math.floor((canvas.width * canvas.height) / 4500);
+      for (let i = 0; i < numStars; i++) {
+        stars.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          radius: Math.random() * 1.3,
+          alpha: Math.random() * 0.8 + 0.2,
+          speed: Math.random() * 0.015 + 0.005
+        });
+      }
+    }
+
+    function drawStars() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let star of stars) {
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(220, 230, 255, ${star.alpha})`;
+        ctx.fill();
+
+        star.alpha += Math.sin(Date.now() * star.speed) * 0.01;
+        if (star.alpha < 0.1) star.alpha = 0.1;
+        if (star.alpha > 0.95) star.alpha = 0.95;
+      }
+      requestAnimationFrame(drawStars);
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+    drawStars();
+
+    /* =========================================================
+       2. LORE & UNIVERSE DATA
+    ========================================================= */
+    const UNIVERSES = [
+      {
+        id: 'cyberpunk',
+        name: '서기 2099년 네오 서울 뒷골목',
+        desc: '비에 젖은 사이버네틱 네온사인 아래, 기억 칩과 낡은 기계 부품을 거래하는 어스름한 미래 도시입니다.',
+        icon: 'fa-microchip',
+        roles: ['도망친 인공지능 엔지니어', '기억 복원상', '사이버 사이버네틱스 의사', '심야 홀로그램 버스킹 가수', '전자 뇌 청소부'],
+        moods: ['네온 비를 피하며 합성 라면 먹는 중', '메모리 칩에서 옛날 피아노곡을 복원함', '추적 드론을 따돌리고 환풍구에 숨음']
+      },
+      {
+        id: 'gyeongseong',
+        name: '1920년대 경성 야간 재즈바',
+        desc: '축음기에서 흘러나오는 재즈 선율과 자욱한 커피 향 속, 신문물과 시대의 고뇌가 교차하는 낭만의 밤.',
+        icon: 'fa-record-vinyl',
+        roles: ['축음기 수리공', '모던 보이 시인', '비밀 독립자금 전달책', '재즈바 단골 피아니스트', '가비(커피) 바리스타'],
+        moods: ['축음기 바늘을 갈아 끼우며 원고 쓰는 중', '밤안개 자욱한 종로 거리를 거니는 중', '새로 들여온 양과자를 맛보고 있음']
+      },
+      {
+        id: 'andromeda',
+        name: '안드로메다 식물도감 연구소',
+        desc: '빛을 뿜는 외계 이끼와 공중에 떠다니는 포자를 채집하며 생명의 지도를 그리는 우주 변방의 연구소.',
+        icon: 'fa-seedling',
+        roles: ['유리온실 정원사', '성간 포자 분류학자', '인공위성 관측대원', '외계 토양 분석가', '별빛 배양 연구원'],
+        moods: ['푸른 빛을 내는 야광 버섯에게 물 주는 중', '외계 별자리 관측 일지를 정리함', '온실 통유리 너머로 혜성 지나가는 걸 봄']
+      },
+      {
+        id: 'retro1994',
+        name: '1994년 시골마을 카세트 대여점',
+        desc: '여름 매미 소리와 선풍기 돌아가는 소리, 믹스테이프에 좋아하는 라디오 음악을 녹음하던 아날로그 시절.',
+        icon: 'fa-tape',
+        roles: ['심야 라디오 DJ 애청자', '카세트 테이프 대여점 알바생', '시골 간이역 역무원', '필름 카메라 출사생', '만화방 단골 고등학생'],
+        moods: ['볼펜으로 늘어난 테이프 감는 중', '선풍기 바람 쐬며 라디오 엽서 쓰는 밤', '옥상에서 별똥별 떨어지길 기다리는 중']
+      },
+      {
+        id: 'magiclib',
+        name: '중세 마법학원 지하 도서관',
+        desc: '스스로 책장을 넘기는 마도서들과 푸른 촛불이 춤추는, 잊힌 고대 마법과 연금술의 보물창고.',
+        icon: 'fa-wand-magic-sparkles',
+        roles: ['마지막 연금술사 수습생', '금서고 열쇠지기', '부엉이 전령사 조련사', '별자리 점성술사', '기억을 추출하는 마법사'],
+        moods: ['도망치는 날개 달린 책을 잡는 중', '만드라고라 화분에 약초 거름 주는 밤', '올빼미 깃털 펜으로 양피지 필사 중']
+      }
+    ];
+
+    /* =========================================================
+       3. INITIAL MOCK LETTERS DATA (IMMERSIVE SEEDS)
+    ========================================================= */
+    const DEFAULT_INBOX = [
+      {
+        id: 'msg-001',
+        title: '그곳의 밤하늘에도 진짜 별이 뜨나요?',
+        sender: '기억 복원상 (서기 2099년 네오 서울 뒷골목)',
+        era: '서기 2099년 네오 서울 뒷골목',
+        timestamp: '시간선 교차 12분 전',
+        read: false,
+        favorite: false,
+        stampIcon: 'fa-compass',
+        body: `안녕, 낯선 시공간의 친구여.
+
+지금 여긴 네온사인 간판들이 젖은 아스팔트에 반사되어 온통 인공적인 보랏빛으로 물들어 있어. 방금 어떤 손님이 가져온 80년 전 고장 난 홀로그램 큐브에서 '시골의 반딧불이' 영상을 복원해 줬거든. 
+
+손님이 울컥하는 걸 보고 나도 모르게 가슴 한편이 시큰해지더라. 우리 시대엔 진짜 자연의 별을 보려면 대기 정화 구역까지 티켓을 끊고 가야 하거든.
+
+당신이 있는 그곳의 밤은 어떤 모습이야? 
+창문을 열면 차가운 바람 냄새가 나? 
+언제든 좋으니 답장 한 줄만 적어주라. 이 기계음 가득한 도시에서 당신의 한 줄이 큰 온기가 될 것 같아.`
+      },
+      {
+        id: 'msg-002',
+        title: '가비(珈琲) 한 잔과 빗소리를 띄웁니다',
+        sender: '모던 보이 시인 (1920년대 경성 야간 재즈바)',
+        era: '1920년대 경성 야간 재즈바',
+        timestamp: '시간선 교차 3시간 전',
+        read: false,
+        favorite: true,
+        stampIcon: 'fa-moon',
+        body: `경성의 밤은 유난히도 깊고 서늘합니다.
+테이블 구석에 놓인 축음기에선 미국에서 건너왔다는 낯선 여가수의 재즈곡이 지직거리는 잡음과 함께 흘러나오고 있소.
+
+세상은 하루가 멀다 하고 빠르게 변해간다는데, 내 가슴속의 불안과 쓸쓸함은 왜 이 쓴 커피 한 모금으로도 가시지 않는 건지. 
+
+혹시 먼 미래의 당신은, 혹은 다른 차원의 당신은 길을 잃지 않고 잘 걸어가고 있소? 
+사람들은 그곳에서도 서로의 눈을 보고 웃어주는지 궁금하구려. 
+
+밤이 깊었으니 무리하지 말고 따뜻한 차 한 잔 마시며 쉬어가시오.`
+      },
+      {
+        id: 'msg-003',
+        title: '유리온실에서 세 번째 발광초가 피었습니다',
+        sender: '유리온실 정원사 (안드로메다 식물도감 연구소)',
+        era: '안드로메다 식물도감 연구소',
+        timestamp: '시간선 교차 어제',
+        read: true,
+        favorite: false,
+        stampIcon: 'fa-feather',
+        body: `시공간 전송 파장을 타고 이 편지가 무사히 도착할 수 있기를!
+
+여기는 모성(母星)에서 14만 광년 떨어진 제4관측 기지예요. 방금 영하 120도의 외벽 유리창 바로 안쪽에서, 여섯 달 동안 잠들어 있던 '푸른 에테르 이끼'가 에메랄드빛 꽃망울을 터뜨렸답니다.
+
+너무 기뻐서 연구소 사람들을 깨울까 하다가, 불현듯 이 신비로운 순간을 전파 너머 알 수 없는 당신에게 가장 먼저 전하고 싶었어요.
+
+당신이 겪고 있는 차가운 계절도, 이 꽃처럼 언젠가 다정한 빛을 피워내기를 진심으로 바랄게요.
+오늘 하루도 참 고생 많으셨어요.`
+      }
+    ];
+
+    /* =========================================================
+       4. APPLICATION STATE MANAGEMENT
+    ========================================================= */
+    let currentTab = 'inbox'; // 'inbox', 'sent', 'lore'
+    let currentLetterId = null;
+    let myPersona = {
+      era: '서기 2099년 네오 서울 뒷골목',
+      role: '기억을 수리하는 시계공',
+      mood: '새벽 라디오 잡음을 들으며 엽서 쓰는 중'
+    };
+
+    let inboxLetters = [];
+    let sentLetters = [];
+
+    // Load or initialize LocalStorage
+    function initData() {
+      const storedPersona = localStorage.getItem('chronos_persona');
+      if (storedPersona) {
+        try { myPersona = JSON.parse(storedPersona); } catch(e){}
+      } else {
+        rollRandomPersona(false);
+      }
+
+      const storedInbox = localStorage.getItem('chronos_inbox');
+      if (storedInbox) {
+        try { inboxLetters = JSON.parse(storedInbox); } catch(e){ inboxLetters = DEFAULT_INBOX; }
+      } else {
+        inboxLetters = DEFAULT_INBOX;
+        saveInbox();
+      }
+
+      const storedSent = localStorage.getItem('chronos_sent');
+      if (storedSent) {
+        try { sentLetters = JSON.parse(storedSent); } catch(e){ sentLetters = []; }
+      } else {
+        sentLetters = [];
+      }
+
+      updatePersonaDisplay();
+      populateUniverseLore();
+      populatePersonaSelect();
+      renderLettersList();
+
+      if (inboxLetters.length > 0) {
+        viewLetter(inboxLetters[0].id);
+      } else {
+        showEmptyView();
+      }
+    }
+
+    function saveInbox() {
+      localStorage.setItem('chronos_inbox', JSON.stringify(inboxLetters));
+    }
+    function saveSent() {
+      localStorage.setItem('chronos_sent', JSON.stringify(sentLetters));
+    }
+    function savePersonaData() {
+      localStorage.setItem('chronos_persona', JSON.stringify(myPersona));
+    }
+
+    /* =========================================================
+       5. AUDIO SYNTH (WEBAUDIO: WAX STAMP & SFX)
+    ========================================================= */
+    function playStampSound() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Thump sound (Wax stamp hit)
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(140, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + 0.18);
+        
+        gain.gain.setValueAtTime(0.7, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.22);
+      } catch (err) {
+        // audio might be blocked without user interaction
+      }
+    }
+
+    /* =========================================================
+       6. UI RENDERING & TAB SWITCHING
+    ========================================================= */
+    function switchTab(tab) {
+      currentTab = tab;
+      
+      const inboxAndSent = document.getElementById('viewInboxAndSent');
+      const loreView = document.getElementById('viewLore');
+      const tabBtnInbox = document.getElementById('tabBtnInbox');
+      const tabBtnSent = document.getElementById('tabBtnSent');
+      const tabBtnLore = document.getElementById('tabBtnLore');
+
+      // Reset tab styling
+      [tabBtnInbox, tabBtnSent, tabBtnLore].forEach(b => {
+        b.className = "px-4 py-2 rounded-lg transition flex items-center gap-2 text-slate-400 hover:text-white hover:bg-white/5";
+      });
+
+      if (tab === 'inbox') {
+        inboxAndSent.classList.remove('hidden');
+        loreView.classList.add('hidden');
+        tabBtnInbox.className = "px-4 py-2 rounded-lg transition flex items-center gap-2 bg-white/10 text-amber-300 font-bold border border-white/10";
+        document.getElementById('letterListTitle').textContent = "차원 수신함";
+        renderLettersList();
+      } else if (tab === 'sent') {
+        inboxAndSent.classList.remove('hidden');
+        loreView.classList.add('hidden');
+        tabBtnSent.className = "px-4 py-2 rounded-lg transition flex items-center gap-2 bg-white/10 text-amber-300 font-bold border border-white/10";
+        document.getElementById('letterListTitle').textContent = "발신 우체통";
+        renderLettersList();
+      } else if (tab === 'lore') {
+        inboxAndSent.classList.add('hidden');
+        loreView.classList.remove('hidden');
+        tabBtnLore.className = "px-4 py-2 rounded-lg transition flex items-center gap-2 bg-white/10 text-amber-300 font-bold border border-white/10";
+      }
+    }
+
+    function renderLettersList() {
+      const container = document.getElementById('lettersListContainer');
+      container.innerHTML = '';
+
+      const letters = (currentTab === 'sent') ? sentLetters : inboxLetters;
+      
+      // Update badge counts
+      const unreadCount = inboxLetters.filter(l => !l.read).length;
+      document.getElementById('unreadCountBadge').textContent = unreadCount;
+      document.getElementById('unreadCountBadge').style.display = unreadCount > 0 ? 'inline-block' : 'none';
+      document.getElementById('sentCountBadge').textContent = sentLetters.length;
+      document.getElementById('letterCountSummary').textContent = `(${letters.length}통 보관 중)`;
+
+      if (letters.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-16 px-4 text-slate-500 text-xs">
+            <i class="fa-solid fa-wind text-2xl mb-2 opacity-40"></i>
+            <p>보관된 편지가 없습니다.</p>
+            ${currentTab === 'sent' ? '<p class="mt-1">새 편지를 써서 평행세계로 띄워보세요!</p>' : ''}
+          </div>
+        `;
+        showEmptyView();
+        return;
+      }
+
+      letters.forEach(letter => {
+        const isSelected = letter.id === currentLetterId;
+        const isUnread = !letter.read && currentTab === 'inbox';
+
+        const item = document.createElement('div');
+        item.className = `p-3.5 rounded-xl cursor-pointer border transition duration-200 relative group ${
+          isSelected 
+            ? 'bg-space-700/90 border-amber-500/50 shadow-md' 
+            : 'bg-space-800/60 hover:bg-space-700/50 border-white/5'
+        }`;
+
+        item.onclick = () => viewLetter(letter.id);
+
+        item.innerHTML = `
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1">
+                ${isUnread ? '<span class="w-2 h-2 rounded-full bg-rose-500 flex-shrink-0 animate-pulse"></span>' : ''}
+                <span class="text-[10px] px-2 py-0.5 rounded bg-space-900/80 text-amber-300/90 border border-white/10 truncate font-mono">
+                  ${escapeHTML(letter.era)}
+                </span>
+                <span class="text-[10px] text-slate-500 ml-auto whitespace-nowrap">${escapeHTML(letter.timestamp)}</span>
+              </div>
+              <h4 class="text-xs md:text-sm font-bold text-slate-100 truncate ${isUnread ? 'text-amber-200' : ''}">
+                ${escapeHTML(letter.title)}
+              </h4>
+              <p class="text-[11px] text-slate-400 truncate mt-0.5">
+                ${escapeHTML(letter.sender)}
+              </p>
+            </div>
+            <div class="flex flex-col items-end gap-1 flex-shrink-0">
+              <i class="fa-solid ${letter.stampIcon || 'fa-compass'} text-amber-500/40 group-hover:text-amber-400 transition text-xs mt-1"></i>
+              ${letter.favorite ? '<i class="fa-solid fa-bookmark text-amber-400 text-[10px]"></i>' : ''}
+            </div>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function viewLetter(id) {
+      currentLetterId = id;
+      const letters = (currentTab === 'sent') ? sentLetters : inboxLetters;
+      const letter = letters.find(l => l.id === id);
+
+      if (!letter) {
+        showEmptyView();
+        return;
+      }
+
+      // Mark as read
+      if (!letter.read) {
+        letter.read = true;
+        saveInbox();
+      }
+
+      document.getElementById('emptyLetterView').classList.add('hidden');
+      const paper = document.getElementById('letterPaperView');
+      paper.classList.remove('hidden');
+
+      // Populate Paper fields
+      document.getElementById('viewEraBadge').textContent = letter.era;
+      document.getElementById('viewLetterSubject').textContent = letter.title;
+      document.getElementById('viewSenderPersona').textContent = letter.sender;
+      document.getElementById('viewTimestamp').textContent = letter.timestamp;
+      document.getElementById('viewLetterBody').textContent = letter.body;
+
+      const waxIcon = document.getElementById('viewWaxIcon');
+      waxIcon.className = `fa-solid ${letter.stampIcon || 'fa-compass'} text-amber-100 text-lg`;
+
+      const favBtn = document.getElementById('favoriteBtn');
+      favBtn.innerHTML = letter.favorite 
+        ? '<i class="fa-solid fa-bookmark text-amber-800"></i><span>보관됨</span>'
+        : '<i class="fa-regular fa-bookmark"></i><span>보관</span>';
+
+      renderLettersList();
+    }
+
+    function showEmptyView() {
+      document.getElementById('emptyLetterView').classList.remove('hidden');
+      document.getElementById('letterPaperView').classList.add('hidden');
+    }
+
+    function saveLetterAsFavorite() {
+      if (!currentLetterId) return;
+      const letters = (currentTab === 'sent') ? sentLetters : inboxLetters;
+      const letter = letters.find(l => l.id === currentLetterId);
+      if (letter) {
+        letter.favorite = !letter.favorite;
+        if (currentTab === 'sent') saveSent(); else saveInbox();
+        viewLetter(currentLetterId);
+        showToast(letter.favorite ? "영구 보관함에 각인되었습니다." : "보관 해제되었습니다.");
+      }
+    }
+
+    /* =========================================================
+       7. WRITE & SEND LETTER SIMULATION
+    ========================================================= */
+    function openWriteModal(replyToLetter = null) {
+      const modal = document.getElementById('writeModal');
+      document.getElementById('formSender').value = `${myPersona.role} (${myPersona.era})`;
+      
+      if (replyToLetter) {
+        document.getElementById('formTitle').value = `답장: ${replyToLetter.title.replace(/^답장:\s*/, '')}`;
+        document.getElementById('formTargetEra').value = replyToLetter.era;
+        document.getElementById('formBody').value = `> ${replyToLetter.sender} 님께,\n\n`;
+      } else {
+        document.getElementById('writeLetterForm').reset();
+        document.getElementById('formSender').value = `${myPersona.role} (${myPersona.era})`;
+      }
+      updateCharCount();
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeWriteModal() {
+      const modal = document.getElementById('writeModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function prepareReply() {
+      if (!currentLetterId) return;
+      const letters = (currentTab === 'sent') ? sentLetters : inboxLetters;
+      const letter = letters.find(l => l.id === currentLetterId);
+      if (letter) {
+        openWriteModal(letter);
+      }
+    }
+
+    function updateCharCount() {
+      const text = document.getElementById('formBody').value;
+      const count = text.length;
+      document.getElementById('charCount').textContent = `${count}자 ${count < 30 ? '(정성글 권장)' : ''}`;
+    }
+
+    function handleSendLetter(e) {
+      e.preventDefault();
+      playStampSound();
+
+      const title = document.getElementById('formTitle').value.trim();
+      const body = document.getElementById('formBody').value.trim();
+      let targetEra = document.getElementById('formTargetEra').value;
+      const stampIcon = document.querySelector('input[name="stampIcon"]:checked')?.value || 'fa-compass';
+
+      if (targetEra === 'any') {
+        const randomUni = UNIVERSES[Math.floor(Math.random() * UNIVERSES.length)];
+        targetEra = randomUni.name;
+      }
+
+      const newSentLetter = {
+        id: 'sent-' + Date.now(),
+        title: title,
+        sender: `나 (${myPersona.role})`,
+        era: `도착지: ${targetEra}`,
+        timestamp: '방금 전 발송됨',
+        read: true,
+        favorite: false,
+        stampIcon: stampIcon,
+        body: body
+      };
+
+      sentLetters.unshift(newSentLetter);
+      saveSent();
+
+      closeWriteModal();
+      showToast("차원간 전송망에 편지가 띄워졌습니다. (답장 대기 중)");
+
+      // Simulate a reply coming back after 10-18 seconds!
+      simulateIncomingReply(targetEra, title);
+
+      // Auto switch to sent tab to verify
+      switchTab('sent');
+      viewLetter(newSentLetter.id);
+    }
+
+    /* Simulation of Parallel Universe Resident Replying */
+    function simulateIncomingReply(targetEra, userSubject) {
+      const targetUni = UNIVERSES.find(u => targetEra.includes(u.name)) || UNIVERSES[Math.floor(Math.random() * UNIVERSES.length)];
+      const randomRole = targetUni.roles[Math.floor(Math.random() * targetUni.roles.length)];
+
+      setTimeout(() => {
+        const replyPool = [
+          `전송 단말기에 붉은 신호가 깜빡이더니 당신의 편지가 출력되었어요.\n\n"${userSubject}"라는 글을 읽고 저도 모르게 작업하던 손을 멈췄습니다. 우리가 비록 서로 다른 차원, 다른 시대의 공기를 마시고 있지만 같은 온도의 쓸쓸함이나 호기심을 지니고 있다는 사실이 퍽 위안이 되네요.\n\n여기는 지금 ${targetUni.moods[Math.floor(Math.random() * targetUni.moods.length)]}. \n언젠가 전파가 다시 교차할 때 또 이야기 들려주세요. 항상 평안하길 빕니다.`,
+          `시공간 우체국의 비둘기가 마침내 이 외딴 세계에도 도착했군요.\n\n적어주신 다정한 글 덕분에 오늘은 하루 종일 마음에 훈풍이 불 것 같습니다. 당신의 세계는 오늘 어떤 날이었나요? 굳이 거창한 사건이 아니어도 좋아요. 밥은 든든히 챙겨 드셨는지, 밤잠은 깊게 주무시는지 그런 소박한 안부들이 이곳에선 별처럼 빛나니까요.\n\n답장을 적어 바람에 띄워 보냅니다.`,
+          `수신 완료 신호를 확인하자마자 서둘러 깃펜을 들었습니다!\n\n당신의 질문과 생각들이 제게는 한 편의 전설이나 소설처럼 신비롭게 다가왔어요. 이곳 사람들은 매일 반복되는 일상에 지쳐 있지만, 저는 당신의 편지를 주머니에 품고 오늘 밤을 버텨볼 생각입니다.\n\n시간이 허락한다면 부디 또 서신을 건네주세요.`
+        ];
+
+        const incomingLetter = {
+          id: 'reply-' + Date.now(),
+          title: `[수신 답장] ${userSubject.replace(/^답장:\s*/, '')}`,
+          sender: `${randomRole} (${targetUni.name})`,
+          era: targetUni.name,
+          timestamp: '방금 도착함',
+          read: false,
+          favorite: false,
+          stampIcon: ['fa-moon', 'fa-feather', 'fa-compass', 'fa-hourglass'][Math.floor(Math.random() * 4)],
+          body: replyPool[Math.floor(Math.random() * replyPool.length)]
+        };
+
+        inboxLetters.unshift(incomingLetter);
+        saveInbox();
+
+        // If on inbox, re-render
+        if (currentTab === 'inbox') {
+          renderLettersList();
+        } else {
+          document.getElementById('unreadCountBadge').textContent = inboxLetters.filter(l => !l.read).length;
+          document.getElementById('unreadCountBadge').style.display = 'inline-block';
+        }
+
+        showToast(`새 편지 도착! 🌌 ${targetUni.name}에서 답장이 당도했습니다.`);
+      }, 12000);
+    }
+
+    /* Manual Roll New Letter */
+    function rollRandomLetterArrival() {
+      const uni = UNIVERSES[Math.floor(Math.random() * UNIVERSES.length)];
+      const role = uni.roles[Math.floor(Math.random() * uni.roles.length)];
+      
+      const promptTitles = [
+        "지나가는 전파를 잡았습니다. 혹시 거기 계시나요?",
+        "오늘 밤, 당신의 하늘엔 어떤 달이 떴나요?",
+        "시간의 틈새에서 부치지 못한 편지를 발견했습니다",
+        "누군가의 따뜻한 한마디가 간절한 새벽입니다",
+        "여기는 빗소리가 참 좋습니다. 그쪽은 어떤가요?"
+      ];
+
+      const newArrival = {
+        id: 'msg-' + Date.now(),
+        title: promptTitles[Math.floor(Math.random() * promptTitles.length)],
+        sender: `${role} (${uni.name})`,
+        era: uni.name,
+        timestamp: '방금 도착함',
+        read: false,
+        favorite: false,
+        stampIcon: 'fa-compass',
+        body: `차원 송신망에 주파수가 우연히 맞닿았습니다.\n\n저는 ${uni.name}에서 살아가는 ${role}입니다. 오늘 우연히 시공간 나침반의 바늘이 가리킨 곳에 이 편지를 띄워봅니다.\n\n어디에 계시든, 이 편지를 읽는 순간만큼은 고단한 마음을 내려놓으셨으면 좋겠습니다. 당신의 세계관과 소소한 하루가 궁금합니다. 답장을 기다려도 될까요?`
+      };
+
+      inboxLetters.unshift(newArrival);
+      saveInbox();
+      switchTab('inbox');
+      viewLetter(newArrival.id);
+      showToast("🌌 시공간 전파 탐색 성공! 새로운 편지가 우체통에 도착했습니다.");
+    }
+
+    /* =========================================================
+       8. PERSONA SYSTEM
+    ========================================================= */
+    function populatePersonaSelect() {
+      const select = document.getElementById('personaEraSelect');
+      select.innerHTML = '';
+      UNIVERSES.forEach(u => {
+        const opt = document.createElement('option');
+        opt.value = u.name;
+        opt.textContent = u.name;
+        select.appendChild(opt);
+      });
+      select.value = myPersona.era;
+      document.getElementById('personaRoleInput').value = myPersona.role;
+      document.getElementById('personaMoodInput').value = myPersona.mood;
+      previewPersonaCard();
+    }
+
+    function openPersonaModal() {
+      populatePersonaSelect();
+      document.getElementById('personaModal').classList.remove('hidden');
+      document.getElementById('personaModal').classList.add('flex');
+    }
+
+    function closePersonaModal() {
+      document.getElementById('personaModal').classList.add('hidden');
+      document.getElementById('personaModal').classList.remove('flex');
+    }
+
+    function previewPersonaCard() {
+      const era = document.getElementById('personaEraSelect').value;
+      const role = document.getElementById('personaRoleInput').value || '방랑자';
+      const mood = document.getElementById('personaMoodInput').value || '시간을 건너는 중';
+
+      document.getElementById('previewCardEra').textContent = era;
+      document.getElementById('previewCardRole').textContent = role;
+      document.getElementById('previewCardMood').textContent = `"${mood}"`;
+    }
+
+    function rollRandomPersona(updateUI = true) {
+      const uni = UNIVERSES[Math.floor(Math.random() * UNIVERSES.length)];
+      const randomRole = uni.roles[Math.floor(Math.random() * uni.roles.length)];
+      const randomMood = uni.moods[Math.floor(Math.random() * uni.moods.length)];
+
+      myPersona = {
+        era: uni.name,
+        role: randomRole,
+        mood: randomMood
+      };
+
+      if (updateUI) {
+        document.getElementById('personaEraSelect').value = myPersona.era;
+        document.getElementById('personaRoleInput').value = myPersona.role;
+        document.getElementById('personaMoodInput').value = myPersona.mood;
+        previewPersonaCard();
+      }
+      savePersonaData();
+      updatePersonaDisplay();
+    }
+
+    function savePersona() {
+      myPersona.era = document.getElementById('personaEraSelect').value;
+      myPersona.role = document.getElementById('personaRoleInput').value.trim() || '이름 모를 시공간 방랑자';
+      myPersona.mood = document.getElementById('personaMoodInput').value.trim() || '편지를 기다리는 중';
+
+      savePersonaData();
+      updatePersonaDisplay();
+      closePersonaModal();
+      showToast(`페르소나가 [${myPersona.role}] (으)로 갱신되었습니다.`);
+    }
+
+    function updatePersonaDisplay() {
+      document.getElementById('navPersonaName').textContent = `${myPersona.role}`;
+    }
+
+    /* =========================================================
+       9. LORE PAGE RENDERING
+    ========================================================= */
+    function populateUniverseLore() {
+      const grid = document.getElementById('universeGrid');
+      grid.innerHTML = '';
+
+      UNIVERSES.forEach(u => {
+        const card = document.createElement('div');
+        card.className = "bg-space-800/80 border border-white/10 rounded-xl p-5 hover:border-amber-400/40 transition duration-300 flex flex-col justify-between";
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center gap-3 mb-2.5">
+              <div class="w-9 h-9 rounded-lg bg-amber-500/10 border border-amber-400/20 text-amber-300 flex items-center justify-center text-base">
+                <i class="fa-solid ${u.icon}"></i>
+              </div>
+              <h4 class="font-bold text-white text-sm">${u.name}</h4>
+            </div>
+            <p class="text-xs text-slate-300 leading-relaxed mb-4">${u.desc}</p>
+            
+            <div class="text-[11px] text-slate-400 border-t border-white/5 pt-3">
+              <span class="text-amber-300 font-semibold">대표 페르소나:</span>
+              <div class="flex flex-wrap gap-1 mt-1">
+                ${u.roles.map(r => `<span class="bg-space-900 px-2 py-0.5 rounded text-[10px] text-slate-300 border border-white/5">${r}</span>`).join('')}
+              </div>
+            </div>
+          </div>
+
+          <button onclick="setPersonaEraDirect('${u.name}')" class="mt-4 w-full py-2 bg-space-700 hover:bg-space-600 text-amber-200 text-xs rounded-lg transition border border-white/5 flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-satellite"></i>
+            <span>이 차원으로 주파수 맞추기</span>
+          </button>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function setPersonaEraDirect(eraName) {
+      const targetUni = UNIVERSES.find(u => u.name === eraName);
+      if (targetUni) {
+        myPersona.era = eraName;
+        myPersona.role = targetUni.roles[Math.floor(Math.random() * targetUni.roles.length)];
+        myPersona.mood = targetUni.moods[Math.floor(Math.random() * targetUni.moods.length)];
+        savePersonaData();
+        updatePersonaDisplay();
+        switchTab('inbox');
+        showToast(`주파수가 [${eraName}]의 [${myPersona.role}] (으)로 변경되었습니다.`);
+      }
+    }
+
+    /* =========================================================
+       10. UTILITIES
+    ========================================================= */
+    function showToast(text) {
+      const toast = document.getElementById('toastMessage');
+      document.getElementById('toastText').textContent = text;
+      toast.classList.remove('translate-y-24', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-24', 'opacity-0');
+      }, 3500);
+    }
+
+    function escapeHTML(str) {
+      if (!str) return '';
+      return str.replace(/[&<>'"]/g, 
+        tag => ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          "'": '&#39;',
+          '"': '&quot;'
+        }[tag] || tag)
+      );
+    }
+
+    function clearSavedDataConfirm() {
+      if (confirm("정말로 모든 편지와 페르소나 설정을 초기화하시겠습니까?")) {
+        localStorage.removeItem('chronos_persona');
+        localStorage.removeItem('chronos_inbox');
+        localStorage.removeItem('chronos_sent');
+        location.reload();
+      }
+    }
+
+    // App Initialization on Window Load
+    window.onload = function() {
+      initData();
+    };
+  </script>
+</body>
+</html>
